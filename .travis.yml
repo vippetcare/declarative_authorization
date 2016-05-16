@@ -5,3 +5,4 @@ rvm:
 gemfile:
   - gemfiles/4.0.gemfile
   - gemfiles/4.1.gemfile
+  - gemfiles/4.2.gemfile
