@@ -19,20 +19,20 @@ module Authorization
   # NilAttributeValueError is raised by Attribute#validate? when it hits a nil attribute value.
   # The exception is raised to ensure that the entire rule is invalidated.
   class NilAttributeValueError < AuthorizationError; end
-
+  
   AUTH_DSL_FILES = [Pathname.new(Rails.root || '').join("config", "authorization_rules.rb").to_s] unless defined? AUTH_DSL_FILES
-
+  
   # Controller-independent method for retrieving the current user.
   # Needed for model security where the current controller is not available.
   def self.current_user
     Thread.current["current_user"] || AnonymousUser.new
   end
-
+  
   # Controller-independent method for setting the current user.
   def self.current_user=(user)
     Thread.current["current_user"] = user
   end
-
+  
   # For use in test cases only
   def self.ignore_access_control (state = nil) # :nodoc:
     Thread.current["ignore_access_control"] = state unless state.nil?
@@ -51,7 +51,7 @@ module Authorization
   def self.dot_path= (path)
     @@dot_path = path
   end
-
+  
   @@default_role = :guest
   def self.default_role
     @@default_role
@@ -68,7 +68,7 @@ module Authorization
       object.respond_to?(:proxy_association)
     end
   end
-
+  
   # Authorization::Engine implements the reference monitor.  It may be used
   # for querying the permission and retrieving obligations under which
   # a certain privilege is granted for the current user.
@@ -80,7 +80,7 @@ module Authorization
     def_delegators :@reader, :auth_rules_reader, :privileges_reader, :load, :load!
     def_delegators :auth_rules_reader, :auth_rules, :roles, :omnipotent_roles, :role_hierarchy, :role_titles, :role_descriptions
     def_delegators :privileges_reader, :privileges, :privilege_hierarchy
-
+    
     # If +reader+ is not given, a new one is created with the default
     # authorization configuration of +AUTH_DSL_FILES+.  If given, may be either
     # a Reader object or a path to a configuration file.
@@ -98,7 +98,7 @@ module Authorization
       if @rev_priv_hierarchy.nil?
         @rev_priv_hierarchy = {}
         privilege_hierarchy.each do |key, value|
-          value.each do |val|
+          value.each do |val| 
             @rev_priv_hierarchy[val] ||= []
             @rev_priv_hierarchy[val] << key
           end
@@ -106,9 +106,9 @@ module Authorization
       end
       @rev_priv_hierarchy
     end
-
+   
     # {[priv, ctx] => [priv, ...]}
-    def rev_role_hierarchy
+    def rev_role_hierarchy  
       if @rev_role_hierarchy.nil?
         @rev_role_hierarchy = {}
         role_hierarchy.each do |higher_role, lower_roles|
@@ -119,23 +119,23 @@ module Authorization
       end
       @rev_role_hierarchy
     end
-
+    
     # Returns true if privilege is met by the current user.  Raises
     # AuthorizationError otherwise.  +privilege+ may be given with or
     # without context.  In the latter case, the :+context+ option is
     # required.
-    #
+    #  
     # Options:
     # [:+context+]
     #   The context part of the privilege.
     #   Defaults either to the tableized +class_name+ of the given :+object+, if given.
-    #   That is, :+users+ for :+object+ of type User.
+    #   That is, :+users+ for :+object+ of type User.  
     #   Raises AuthorizationUsageError if context is missing and not to be inferred.
     # [:+object+] An context object to test attribute checks against.
     # [:+skip_attribute_test+]
-    #   Skips those attribute checks in the
+    #   Skips those attribute checks in the 
     #   authorization rules. Defaults to false.
-    # [:+user+]
+    # [:+user+] 
     #   The user to check the authorization for.
     #   Defaults to Authorization#current_user.
     # [:+bang+]
@@ -150,12 +150,12 @@ module Authorization
         :context => nil,
         :bang => true
       }.merge(options)
-
+      
       # Make sure we're handling all privileges as symbols.
       privilege = privilege.is_a?( Array ) ?
                   privilege.flatten.collect { |priv| priv.to_sym } :
                   privilege.to_sym
-
+      
       #
       # If the object responds to :proxy_reflection, we're probably working with
       # an association proxy.  Use 'new' to leverage ActiveRecord's builder
@@ -166,22 +166,22 @@ module Authorization
       if Authorization.is_a_association_proxy?(options[:object]) && options[:object].respond_to?(:new)
         options[:object] = (Rails.version < "3.0" ? options[:object] : options[:object].where(nil)).new
       end
-
+      
       options[:context] ||= options[:object] && (
         options[:object].class.respond_to?(:decl_auth_context) ?
             options[:object].class.decl_auth_context :
             options[:object].class.name.tableize.to_sym
       ) rescue NoMethodError
-
+      
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
 
       return true if roles.is_a?(Array) and not (roles & omnipotent_roles).empty?
 
-      # find a authorization rule that matches for at least one of the roles and
+      # find a authorization rule that matches for at least one of the roles and 
       # at least one of the given privileges
       attr_validator = AttributeValidator.new(self, user, options[:object], privilege, options[:context])
       rules = matching_auth_rules(roles, privileges, options[:context])
-
+      
       # Test each rule in turn to see whether any one of them is satisfied.
       rules.each do |rule|
         return true if rule.validate?(attr_validator, options[:skip_attribute_test])
@@ -189,17 +189,17 @@ module Authorization
 
       if options[:bang]
         if rules.empty?
-          raise NotAuthorized, "No matching rules found for #{privilege} for User with id #{user.id} " +
+          raise NotAuthorized, "No matching rules found for #{privilege} for User with id #{user.try(:id)} " +
             "(roles #{roles.inspect}, privileges #{privileges.inspect}, " +
             "context #{options[:context].inspect})."
         else
-          raise AttributeAuthorizationError, "#{privilege} not allowed for User with id #{user.id} on #{(options[:object] || options[:context]).inspect}."
+          raise AttributeAuthorizationError, "#{privilege} not allowed for User with id #{user.try(:id)} on #{(options[:object] || options[:context]).inspect}."
         end
       else
         false
       end
     end
-
+    
     # Calls permit! but doesn't raise authorization errors. If no exception is
     # raised, permit? returns true and yields  to the optional block.
     def permit? (privilege, options = {}) # :yields:
@@ -258,7 +258,7 @@ module Authorization
     # Returns the role symbols of the given user.
     def roles_for (user)
       user ||= Authorization.current_user
-      raise AuthorizationUsageError, "User object doesn't respond to roles (#{user.id})" \
+      raise AuthorizationUsageError, "User object doesn't respond to roles (#{user.try(:id)})" \
         if !user.respond_to?(:role_symbols) and !user.respond_to?(:roles)
 
       Rails.logger.info("The use of user.roles is deprecated.  Please add a method " +
