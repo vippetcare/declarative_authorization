@@ -70,7 +70,7 @@ class AuthorizationRulesController < ApplicationController
     
     privilege = params[:privilege].to_sym
     context = params[:context].to_sym
-    all_users = User.all
+    all_users = user_class.limit(1000)
     @context = context
     @approaches = analyzer.find_approaches_for(:users => all_users, :prohibited_actions => prohibited_actions) do
       users.each_with_index do |user, idx|
@@ -245,11 +245,15 @@ class AuthorizationRulesController < ApplicationController
     end
   end
 
+  def user_class
+    Authorization.current_user.class
+  end
+
   def find_user_by_id (id)
-    User.find(id)
+    user_class.find(id)
   end
   def find_all_users
-    User.all.select {|user| !user.login.blank?}
+    user_class.limit(1000).select {|user| !user.login.blank?}
   end
 end
 

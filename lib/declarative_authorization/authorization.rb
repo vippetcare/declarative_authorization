@@ -40,7 +40,7 @@ module Authorization
   end
 
   def self.activate_authorization_rules_browser? # :nodoc:
-    ::Rails.env.development?
+    ::Rails.env.development? || ::Rails.env.test?
   end
 
   @@dot_path = "dot"
@@ -621,7 +621,8 @@ module Authorization
         hash.inject({}) do |memo, key_val|
           key, val = key_val
           memo[key] = case val
-                      when Array then "#{val[0]} { #{val[1].respond_to?(:to_ruby) ? val[1].to_ruby.gsub(/^proc \{\n?(.*)\n?\}$/m, '\1') : "..."} }"
+                      # when Array then "#{val[0]} { #{val[1].respond_to?(:to_ruby) ? val[1].to_ruby.gsub(/^proc \{\n?(.*)\n?\}$/m, '\1') : "..."} }"
+                      when Array then "#{val[0]} { #{val[1].respond_to?(:to_ruby) ? val[1].inspect : "..."} }"
                       when Hash then to_long_s(val)
                       end
           memo
