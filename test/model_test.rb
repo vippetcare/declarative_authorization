@@ -1,10 +1,10 @@
 require 'test_helper'
-require File.join(File.dirname(__FILE__), %w{.. lib declarative_authorization in_model})
+require File.join(File.dirname(__FILE__), %w(.. lib declarative_authorization in_model))
 
 ActiveRecord::Base.send :include, Authorization::AuthorizationInModel
 #ActiveRecord::Base.logger = Logger.new(STDOUT)
 
-options = {:adapter => 'sqlite3', :timeout => 500, :database => ':memory:'}
+options = { :adapter => 'sqlite3', :timeout => 500, :database => ':memory:' }
 ActiveRecord::Base.establish_connection(options)
 ActiveRecord::Base.configurations = { 'sqlite3_ar_integration' => options }
 ActiveRecord::Base.connection
@@ -22,31 +22,31 @@ class TestModel < ActiveRecord::Base
 
   # :conditions is deprecated in Rails 4.1
   if Rails.version >= '4'
-    has_many :test_attrs_with_attr, lambda { where(:attr => 1) }, :class_name => "TestAttr"
-    has_many :test_attr_throughs_with_attr, lambda { where("test_attrs.attr = 1") }, :through => :test_attrs,
-      :class_name => "TestAttrThrough", :source => :test_attr_throughs
+    has_many :test_attrs_with_attr, -> { where(:attr => 1) }, :class_name => "TestAttr"
+    has_many :test_attr_throughs_with_attr, -> { where("test_attrs.attr = 1") }, :through => :test_attrs,
+                                                                                 :class_name => "TestAttrThrough", :source => :test_attr_throughs
 
-    has_one :test_attr_throughs_with_attr_and_has_one, lambda { where("test_attrs.attr = 1") }, :through => :test_attrs,
-      :class_name => "TestAttrThrough", :source => :test_attr_throughs
+    has_one :test_attr_throughs_with_attr_and_has_one, -> { where("test_attrs.attr = 1") }, :through => :test_attrs,
+                                                                                            :class_name => "TestAttrThrough", :source => :test_attr_throughs
   else
-    has_many :test_attrs_with_attr, :class_name => "TestAttr", :conditions => {:attr => 1}
+    has_many :test_attrs_with_attr, :class_name => "TestAttr", :conditions => { :attr => 1 }
     has_many :test_attr_throughs_with_attr, :through => :test_attrs,
-      :class_name => "TestAttrThrough", :source => :test_attr_throughs,
-      :conditions => "test_attrs.attr = 1"
+                                            :class_name => "TestAttrThrough", :source => :test_attr_throughs,
+                                            :conditions => "test_attrs.attr = 1"
 
     has_one :test_attr_throughs_with_attr_and_has_one, :through => :test_attrs,
-      :class_name => "TestAttrThrough", :source => :test_attr_throughs,
-      :conditions => "test_attrs.attr = 1"
+                                                       :class_name => "TestAttrThrough", :source => :test_attr_throughs,
+                                                       :conditions => "test_attrs.attr = 1"
   end
 
   if Rails.version < '4'
     attr_accessible :content, :test_attr_through_id, :country_id
   end
 
-  # TODO currently not working in Rails 3
+  # TODO: currently not working in Rails 3
   if Rails.version < "3"
     has_and_belongs_to_many :test_attr_throughs_habtm, :join_table => :test_attrs,
-        :class_name => "TestAttrThrough"
+                                                       :class_name => "TestAttrThrough"
   end
 
   if Rails.version < "3"
@@ -54,17 +54,17 @@ class TestModel < ActiveRecord::Base
   elsif Rails.version < "4"
     scope :with_content, :conditions => "test_models.content IS NOT NULL"
   else
-    scope :with_content, lambda { where("test_models.content IS NOT NULL") }
+    scope :with_content, -> { where("test_models.content IS NOT NULL") }
   end
 
   # Primary key test
   # :primary_key only available from Rails 2.2
   unless Rails.version < "2.2"
     has_many :test_attrs_with_primary_id, :class_name => "TestAttr",
-      :primary_key => :test_attr_through_id, :foreign_key => :test_attr_through_id
+                                          :primary_key => :test_attr_through_id, :foreign_key => :test_attr_through_id
     has_many :test_attr_throughs_with_primary_id,
-      :through => :test_attrs_with_primary_id, :class_name => "TestAttrThrough",
-      :source => :n_way_join_item
+             :through => :test_attrs_with_primary_id, :class_name => "TestAttrThrough",
+             :source => :n_way_join_item
   end
 
   # for checking for unnecessary queries
@@ -95,8 +95,8 @@ class TestAttr < ActiveRecord::Base
 
   if Rails.version < '4'
     attr_accessible :test_model, :test_another_model, :attr, :branch, :company, :test_attr,
-  	  :test_a_third_model, :n_way_join_item, :n_way_join_item_id, :test_attr_through_id,
-  	  :test_model_id, :test_another_model_id
+                    :test_a_third_model, :n_way_join_item, :n_way_join_item_id, :test_attr_through_id,
+                    :test_model_id, :test_another_model_id
   end
 
   def initialize(*args)
@@ -113,9 +113,7 @@ class TestModelSecurityModel < ActiveRecord::Base
   has_many :test_attrs
   using_access_control
 
-  if Rails.version < '4'
-    attr_accessible :attr, :attr_2, :test_attrs
-  end
+  attr_accessible :attr, :attr_2, :test_attrs if Rails.version < '4'
 end
 class TestModelSecurityModelWithFind < ActiveRecord::Base
   if Rails.version < "3.2"
@@ -126,11 +124,9 @@ class TestModelSecurityModelWithFind < ActiveRecord::Base
   has_many :test_attrs
   belongs_to :test_attr
   using_access_control :include_read => true,
-    :context => :test_model_security_models
+                       :context => :test_model_security_models
 
-  if Rails.version < '4'
-    attr_accessible :test_attr, :attr
-  end
+  attr_accessible :test_attr, :attr if Rails.version < '4'
 end
 
 class Branch < ActiveRecord::Base
@@ -138,18 +134,14 @@ class Branch < ActiveRecord::Base
   belongs_to :company
   belongs_to :test_model
 
-  if Rails.version < '4'
-    attr_accessible :name, :company, :test_model
-  end
+  attr_accessible :name, :company, :test_model if Rails.version < '4'
 end
 class Company < ActiveRecord::Base
   has_many :test_attrs
   has_many :branches
   belongs_to :country
 
-  if Rails.version < '4'
-    attr_accessible :name, :country, :country_id
-  end
+  attr_accessible :name, :country, :country_id if Rails.version < '4'
 end
 class SmallCompany < Company
   def self.decl_auth_context
@@ -160,15 +152,13 @@ class Country < ActiveRecord::Base
   has_many :test_models
   has_many :companies
 
-  if Rails.version < '4'
-    attr_accessible :name
-  end
+  attr_accessible :name if Rails.version < '4'
 end
 
 class NamedScopeModelTest < Test::Unit::TestCase
   def test_multiple_deep_ored_belongs_to
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -177,13 +167,13 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
     test_model_2 = TestModel.create!
     test_attr_1 = TestAttr.create! :test_model_id => test_model_1.id,
-                      :test_another_model_id => test_model_2.id
+                                   :test_another_model_id => test_model_2.id
 
     user = MockUser.new(:test_role, :id => test_attr_1)
     if Rails.version >= '4'
@@ -198,7 +188,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_belongs_to_and_has_many_with_contains
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -206,18 +196,18 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_attr_1 = TestAttr.create!
     test_model_1 = TestModel.create!
     test_model_1.test_attrs.create!
 
-    user = MockUser.new(:test_role, :test_attr_value => test_model_1.test_attrs.first.id )
-    assert_equal 1, TestAttr.with_permissions_to( :read, :context => :test_attrs, :user => user ).length
-    assert_equal 1, TestAttr.with_permissions_to( :read, :user => user ).length
+    user = MockUser.new(:test_role, :test_attr_value => test_model_1.test_attrs.first.id)
+    assert_equal 1, TestAttr.with_permissions_to(:read, :context => :test_attrs, :user => user).length
+    assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
     assert_raise Authorization::NotAuthorized do
-      TestAttr.with_permissions_to( :update_test_attrs, :user => user )
+      TestAttr.with_permissions_to(:update_test_attrs, :user => user)
     end
     TestAttr.delete_all
     TestModel.delete_all
@@ -225,7 +215,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_nested_has_many
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :companies, :to => :read do
@@ -233,7 +223,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     allowed_company = Company.create!
@@ -255,7 +245,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_nested_has_many_through
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -263,7 +253,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
     TestModel.delete_all
     TestAttrThrough.delete_all
@@ -288,7 +278,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_is
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -296,7 +286,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -304,7 +294,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_attr_value => test_model_1.id)
     assert_equal 1, TestModel.with_permissions_to(:read,
-      :context => :test_models, :user => user).length
+                                                  :context => :test_models, :user => user).length
     assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
     assert_raise Authorization::NotAuthorized do
       TestModel.with_permissions_to(:update_test_models, :user => user)
@@ -314,7 +304,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_named_scope_on_proxy
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -322,7 +312,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -338,7 +328,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_named_scope_on_named_scope
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -349,7 +339,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     country = Country.create!
@@ -360,7 +350,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role)
 
-    # TODO implement query_count for Rails 3
+    # TODO: implement query_count for Rails 3
     TestModel.query_count = 0
     assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
     assert_equal 1, TestModel.query_count if Rails.version < "3"
@@ -383,7 +373,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_modified_context
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :companies, :to => :read do
@@ -391,20 +381,20 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_company = SmallCompany.create!
 
     user = MockUser.new(:test_role, :test_company_id => test_company.id)
     assert_equal 1, SmallCompany.with_permissions_to(:read,
-      :user => user).length
+                                                     :user => user).length
     SmallCompany.delete_all
   end
 
   def test_with_is_nil
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -417,22 +407,22 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
     test_model_2 = TestModel.create! :content => "Content"
 
     assert_equal test_model_1, TestModel.with_permissions_to(:read,
-      :context => :test_models, :user => MockUser.new(:test_role)).first
+                                                             :context => :test_models, :user => MockUser.new(:test_role)).first
     assert_equal test_model_2, TestModel.with_permissions_to(:read,
-      :context => :test_models, :user => MockUser.new(:test_role_not_nil)).first
+                                                             :context => :test_models, :user => MockUser.new(:test_role_not_nil)).first
     TestModel.delete_all
   end
 
   def test_with_not_is
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -440,7 +430,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
     TestModel.delete_all
 
@@ -454,7 +444,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_lt
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -462,7 +452,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -470,7 +460,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_attr_value => test_model_1.id + 1)
     assert_equal 1, TestModel.with_permissions_to(:read,
-      :context => :test_models, :user => user).length
+                                                  :context => :test_models, :user => user).length
     assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
     assert_raise Authorization::NotAuthorized do
       TestModel.with_permissions_to(:update_test_models, :user => user)
@@ -480,7 +470,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_lte
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -488,7 +478,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -496,7 +486,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_attr_value => test_model_1.id + 1)
     assert_equal 2, TestModel.with_permissions_to(:read,
-      :context => :test_models, :user => user).length
+                                                  :context => :test_models, :user => user).length
     assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
     assert_raise Authorization::NotAuthorized do
       TestModel.with_permissions_to(:update_test_models, :user => user)
@@ -506,7 +496,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_gt
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -514,7 +504,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     TestModel.create!
@@ -522,7 +512,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_attr_value => test_model_1.id - 1)
     assert_equal 1, TestModel.with_permissions_to(:read,
-      :context => :test_models, :user => user).length
+                                                  :context => :test_models, :user => user).length
     assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
     assert_raise Authorization::NotAuthorized do
       TestModel.with_permissions_to(:update_test_models, :user => user)
@@ -532,7 +522,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_gte
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -540,7 +530,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     2.times { TestModel.create! }
@@ -548,7 +538,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_attr_value => test_model_1.id - 1)
     assert_equal 2, TestModel.with_permissions_to(:read,
-      :context => :test_models, :user => user).length
+                                                  :context => :test_models, :user => user).length
     assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
     assert_raise Authorization::NotAuthorized do
       TestModel.with_permissions_to(:update_test_models, :user => user)
@@ -558,13 +548,13 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_empty_obligations
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     TestModel.create!
@@ -579,7 +569,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_multiple_obligations
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -590,21 +580,21 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
     test_model_2 = TestModel.create!
 
     user = MockUser.new(:test_role, :test_attr_value => test_model_1.id,
-                        :test_attr_value_2 => test_model_2.id)
+                                    :test_attr_value_2 => test_model_2.id)
     assert_equal 2, TestModel.with_permissions_to(:read, :user => user).length
     TestModel.delete_all
   end
 
   def test_multiple_roles
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -618,7 +608,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     TestAttr.create! :attr => 1
@@ -632,7 +622,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_multiple_and_empty_obligations
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -641,7 +631,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           has_permission_on :test_models, :to => :read
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -654,7 +644,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_multiple_attributes
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -662,7 +652,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create! :content => 'bla'
@@ -676,7 +666,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_multiple_belongs_to
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -685,7 +675,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_attr_1 = TestAttr.create! :test_model_id => 1, :test_another_model_id => 2
@@ -697,7 +687,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_is_and_priv_hierarchy
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       privileges do
         privilege :read do
           includes :list, :show
@@ -710,7 +700,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -718,7 +708,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_attr_value => test_model_1.id)
     assert_equal 1, TestModel.with_permissions_to(:list,
-      :context => :test_models, :user => user).length
+                                                  :context => :test_models, :user => user).length
     assert_equal 1, TestModel.with_permissions_to(:list, :user => user).length
 
     TestModel.delete_all
@@ -726,7 +716,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_is_and_belongs_to
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -734,7 +724,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -743,7 +733,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_model => test_model_1)
     assert_equal 1, TestAttr.with_permissions_to(:read,
-      :context => :test_attrs, :user => user).length
+                                                 :context => :test_attrs, :user => user).length
 
     TestModel.delete_all
     TestAttr.delete_all
@@ -751,7 +741,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_deep_attribute
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -759,7 +749,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -768,7 +758,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_model_id => test_model_1.id)
     assert_equal 1, TestAttr.with_permissions_to(:read,
-      :context => :test_attrs, :user => user).length
+                                                 :context => :test_attrs, :user => user).length
 
     TestModel.delete_all
     TestAttr.delete_all
@@ -776,7 +766,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_anded_rules
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read, :join_by => :and do
@@ -785,7 +775,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -795,7 +785,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_model => test_model_1)
     assert_equal 1, TestAttr.with_permissions_to(:read,
-      :context => :test_attrs, :user => user).length
+                                                 :context => :test_attrs, :user => user).length
 
     TestModel.delete_all
     TestAttr.delete_all
@@ -803,7 +793,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_contains
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -811,7 +801,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -824,7 +814,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
                         :id => test_model_1.test_attrs.first.id)
     assert_equal 1, TestModel.with_permissions_to(:read, :user => user).length
     if Rails.version < '3'
-    assert_equal 1, TestModel.with_permissions_to(:read, :user => user).find(:all, :conditions => {:id => test_model_1.id} ).length
+      assert_equal 1, TestModel.with_permissions_to(:read, :user => user).find(:all, :conditions => { :id => test_model_1.id }).length
     else
       assert_equal 1, TestModel.with_permissions_to(:read, :user => user).where(:id => test_model_1.id).length
     end
@@ -835,7 +825,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_does_not_contain
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -843,7 +833,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -861,7 +851,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_contains_conditions
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -869,7 +859,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -891,12 +881,12 @@ class NamedScopeModelTest < Test::Unit::TestCase
     TestAttr.delete_all
   end
 
-  # TODO fails in Rails 3 because TestModel.scoped.joins(:test_attr_throughs_with_attr)
+  # TODO: fails in Rails 3 because TestModel.scoped.joins(:test_attr_throughs_with_attr)
   # does not work
   if Rails.version < "3"
     def test_with_contains_through_conditions
       reader = Authorization::Reader::DSLReader.new
-      reader.parse %{
+      reader.parse %(
         authorization do
           role :test_role do
             has_permission_on :test_models, :to => :read do
@@ -904,7 +894,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
             end
           end
         end
-      }
+      )
       Authorization::Engine.instance(reader)
 
       test_model_1 = TestModel.create!
@@ -931,7 +921,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
   if Rails.version < "3"
     def test_with_contains_habtm
       reader = Authorization::Reader::DSLReader.new
-      reader.parse %{
+      reader.parse %(
         authorization do
           role :test_role do
             has_permission_on :test_models, :to => :read do
@@ -939,10 +929,10 @@ class NamedScopeModelTest < Test::Unit::TestCase
             end
           end
         end
-      }
+      )
       Authorization::Engine.instance(reader)
 
-      # TODO habtm currently not working in Rails 3
+      # TODO: habtm currently not working in Rails 3
       test_model_1 = TestModel.create!
       test_model_2 = TestModel.create!
       test_attr_through_1 = TestAttrThrough.create!
@@ -965,7 +955,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
   if Rails.version > "2.2"
     def test_with_contains_through_primary_key
       reader = Authorization::Reader::DSLReader.new
-      reader.parse %{
+      reader.parse %(
         authorization do
           role :test_role do
             has_permission_on :test_models, :to => :read do
@@ -973,7 +963,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
             end
           end
         end
-      }
+      )
       Authorization::Engine.instance(reader)
       TestModel.delete_all
       TestAttrThrough.delete_all
@@ -983,7 +973,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
       test_item = NWayJoinItem.create!
       test_model_1 = TestModel.create!(:test_attr_through_id => test_attr_through_1.id)
       test_attr_1 = TestAttr.create!(:test_attr_through_id => test_attr_through_1.id,
-          :n_way_join_item_id => test_item.id)
+                                     :n_way_join_item_id => test_item.id)
 
       user = MockUser.new(:test_role,
                           :id => test_attr_through_1.id)
@@ -997,7 +987,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_intersects_with
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -1005,7 +995,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -1029,7 +1019,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_is_and_has_one
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do :test_attr_has_one
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -1037,7 +1027,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -1046,18 +1036,18 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
     user = MockUser.new(:test_role, :test_attr => test_attr_1)
     assert_equal 1, TestModel.with_permissions_to(:read,
-      :context => :test_models, :user => user).length
+                                                  :context => :test_models, :user => user).length
 
     TestModel.delete_all
     TestAttr.delete_all
   end
 
-  # TODO fails in Rails 3 because TestModel.scoped.joins(:test_attr_throughs_with_attr)
+  # TODO: fails in Rails 3 because TestModel.scoped.joins(:test_attr_throughs_with_attr)
   # does not work
   if Rails.version < "3"
     def test_with_is_and_has_one_through_conditions
       reader = Authorization::Reader::DSLReader.new
-      reader.parse %{
+      reader.parse %(
         authorization do
           role :test_role do
             has_permission_on :test_models, :to => :read do
@@ -1065,7 +1055,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
             end
           end
         end
-      }
+      )
       Authorization::Engine.instance(reader)
 
       test_model_1 = TestModel.create!
@@ -1091,7 +1081,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_is_in
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -1099,7 +1089,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -1108,9 +1098,9 @@ class NamedScopeModelTest < Test::Unit::TestCase
     TestModel.create!.test_attrs.create!
 
     user = MockUser.new(:test_role, :test_model => test_model_1,
-      :test_model_2 => test_model_2)
+                                    :test_model_2 => test_model_2)
     assert_equal 1, TestAttr.with_permissions_to(:read,
-      :context => :test_attrs, :user => user).length
+                                                 :context => :test_attrs, :user => user).length
 
     TestModel.delete_all
     TestAttr.delete_all
@@ -1118,7 +1108,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_not_is_in
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -1126,7 +1116,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
     TestModel.delete_all
     TestAttr.delete_all
@@ -1137,9 +1127,9 @@ class NamedScopeModelTest < Test::Unit::TestCase
     TestModel.create!.test_attrs.create!
 
     user = MockUser.new(:test_role, :test_model => test_model_1,
-      :test_model_2 => test_model_2)
+                                    :test_model_2 => test_model_2)
     assert_equal 1, TestAttr.with_permissions_to(:read,
-      :context => :test_attrs, :user => user).length
+                                                 :context => :test_attrs, :user => user).length
 
     TestModel.delete_all
     TestAttr.delete_all
@@ -1147,7 +1137,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_if_permitted_to
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -1158,7 +1148,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -1172,7 +1162,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_anded_if_permitted_to
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :base_role do
           has_permission_on :test_attrs, :to => :read, :join_by => :and do
@@ -1193,7 +1183,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!(:content => "first test")
@@ -1222,7 +1212,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_if_permitted_to_with_no_child_permissions
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :another_role do
           has_permission_on :test_models, :to => :read do
@@ -1241,7 +1231,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -1263,7 +1253,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_if_permitted_to_with_context_from_model
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -1274,7 +1264,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -1291,7 +1281,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_has_many_if_permitted_to
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -1302,7 +1292,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -1318,7 +1308,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_deep_has_many_if_permitted_to
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :branches, :to => :read do
@@ -1329,7 +1319,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     readable_company = Company.create!
@@ -1347,7 +1337,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_if_permitted_to_and_empty_obligations
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read
@@ -1356,7 +1346,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -1370,7 +1360,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_if_permitted_to_nil
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -1381,7 +1371,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_attr_1 = TestAttr.create!
@@ -1393,7 +1383,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_if_permitted_to_self
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_models, :to => :read do
@@ -1404,7 +1394,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_model_1 = TestModel.create!
@@ -1419,7 +1409,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_has_many_and_reoccuring_tables
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -1428,17 +1418,17 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_attr_1 = TestAttr.create!(
-        :test_model => TestModel.create!(:content => 'test_1_1'),
-        :test_another_model => TestModel.create!(:content => 'test_1_2')
-      )
+      :test_model => TestModel.create!(:content => 'test_1_1'),
+      :test_another_model => TestModel.create!(:content => 'test_1_2')
+    )
     test_attr_2 = TestAttr.create!(
-        :test_model => TestModel.create!(:content => 'test_2_1'),
-        :test_another_model => TestModel.create!(:content => 'test_2_2')
-      )
+      :test_model => TestModel.create!(:content => 'test_2_1'),
+      :test_another_model => TestModel.create!(:content => 'test_2_2')
+    )
 
     user = MockUser.new(:test_role)
     assert_equal 1, TestAttr.with_permissions_to(:read, :user => user).length
@@ -1448,7 +1438,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_ored_rules_and_reoccuring_tables
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -1461,17 +1451,17 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_attr_1 = TestAttr.create!(
-        :test_model => TestModel.create!(:content => 'test_1_1'),
-        :test_another_model => TestModel.create!(:content => 'test_1_2')
-      )
+      :test_model => TestModel.create!(:content => 'test_1_1'),
+      :test_another_model => TestModel.create!(:content => 'test_1_2')
+    )
     test_attr_2 = TestAttr.create!(
-        :test_model => TestModel.create!(:content => 'test_2_1'),
-        :test_another_model => TestModel.create!(:content => 'test_2_2')
-      )
+      :test_model => TestModel.create!(:content => 'test_2_1'),
+      :test_another_model => TestModel.create!(:content => 'test_2_2')
+    )
     test_attr_2.test_model.test_attrs.create!
 
     user = MockUser.new(:test_role, :test_attr => test_attr_2.test_model.test_attrs.last)
@@ -1486,7 +1476,7 @@ class NamedScopeModelTest < Test::Unit::TestCase
 
   def test_with_many_ored_rules_and_reoccuring_tables
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -1499,20 +1489,20 @@ class NamedScopeModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     country = Country.create!(:name => 'country_1')
     country.test_models.create!
     test_attr_1 = TestAttr.create!(
-        :branch => Branch.create!(:name => 'branch_1',
-            :company => Company.create!(:name => 'company_1',
-                :country => country))
-      )
+      :branch => Branch.create!(:name => 'branch_1',
+                                :company => Company.create!(:name => 'company_1',
+                                                            :country => country))
+    )
     test_attr_2 = TestAttr.create!(
-        :company => Company.create!(:name => 'company_2',
-            :country => country)
-      )
+      :company => Company.create!(:name => 'company_2',
+                                  :country => country)
+    )
 
     user = MockUser.new(:test_role, :test_model => country.test_models.first)
 
@@ -1529,7 +1519,7 @@ end
 class ModelTest < Test::Unit::TestCase
   def test_permit_with_has_one_raises_no_name_error
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do :test_attr_has_one
         role :test_role do
           has_permission_on :test_attrs, :to => :update do
@@ -1537,7 +1527,7 @@ class ModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     instance = Authorization::Engine.instance(reader)
 
     test_model = TestModel.create!
@@ -1556,7 +1546,7 @@ class ModelTest < Test::Unit::TestCase
 
   def test_model_security_write_allowed
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_model_security_models do
@@ -1565,7 +1555,7 @@ class ModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     Authorization.current_user = MockUser.new(:test_role)
@@ -1582,7 +1572,7 @@ class ModelTest < Test::Unit::TestCase
 
   def test_model_security_write_not_allowed_no_privilege
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_model_security_models do
@@ -1593,7 +1583,7 @@ class ModelTest < Test::Unit::TestCase
         role :test_role_restricted do
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     Authorization.current_user = MockUser.new(:test_role)
@@ -1607,7 +1597,7 @@ class ModelTest < Test::Unit::TestCase
 
   def test_model_security_write_not_allowed_wrong_attribute_value
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role_unrestricted do
           has_permission_on :test_model_security_models do
@@ -1621,7 +1611,7 @@ class ModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     Authorization.current_user = MockUser.new(:test_role)
@@ -1645,7 +1635,7 @@ class ModelTest < Test::Unit::TestCase
 
   def test_model_security_with_and_without_find_restrictions
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role_unrestricted do
           has_permission_on :test_model_security_models do
@@ -1659,7 +1649,7 @@ class ModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     Authorization.current_user = MockUser.new(:test_role_unrestricted)
@@ -1676,7 +1666,7 @@ class ModelTest < Test::Unit::TestCase
 
   def test_model_security_with_read_restrictions_and_exists
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_model_security_models do
@@ -1685,7 +1675,7 @@ class ModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_attr = TestAttr.create
@@ -1702,7 +1692,7 @@ class ModelTest < Test::Unit::TestCase
 
   def test_model_security_delete_unallowed
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role_unrestricted do
           has_permission_on :test_model_security_models do
@@ -1716,7 +1706,7 @@ class ModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     Authorization.current_user = MockUser.new(:test_role_unrestricted)
@@ -1730,7 +1720,7 @@ class ModelTest < Test::Unit::TestCase
 
   def test_model_security_changing_critical_attribute_unallowed
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role_unrestricted do
           has_permission_on :test_model_security_models do
@@ -1744,14 +1734,14 @@ class ModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     Authorization.current_user = MockUser.new(:test_role_unrestricted)
     object = TestModelSecurityModel.create :attr => 2
     Authorization.current_user = MockUser.new(:test_role)
 
-    # TODO before not checked yet
+    # TODO: before not checked yet
     #assert_raise Authorization::AuthorizationError do
     #  object.update_attributes(:attr => 1)
     #end
@@ -1759,10 +1749,10 @@ class ModelTest < Test::Unit::TestCase
 
   def test_model_security_no_role_unallowed
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     Authorization.current_user = MockUser.new(:test_role_2)
@@ -1773,7 +1763,7 @@ class ModelTest < Test::Unit::TestCase
 
   def test_model_security_with_assoc
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_model_security_models do
@@ -1782,7 +1772,7 @@ class ModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     test_attr = TestAttr.create
@@ -1804,7 +1794,7 @@ class ModelTest < Test::Unit::TestCase
 
   def test_model_security_with_update_attrbributes
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_model_security_models, :to => :update do
@@ -1812,7 +1802,7 @@ class ModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     params = {
@@ -1845,7 +1835,7 @@ class ModelTest < Test::Unit::TestCase
 
   def test_authorization_permit_association_proxy
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :test_attrs, :to => :read do
@@ -1853,57 +1843,57 @@ class ModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     engine = Authorization::Engine.instance(reader)
 
     test_model = TestModel.create(:content => "content")
     assert engine.permit?(:read, :object => test_model.test_attrs,
-                          :user => MockUser.new(:test_role))
+                                 :user => MockUser.new(:test_role))
     assert !engine.permit?(:read, :object => TestAttr.new,
-                          :user => MockUser.new(:test_role))
+                                  :user => MockUser.new(:test_role))
     TestModel.delete_all
   end
 
   def test_authorization_permit_nested_association_proxy
-   reader = Authorization::Reader::DSLReader.new
-   reader.parse %{
-     authorization do
-       role :test_role do
-         has_permission_on :branches, :to => :read do
-           if_attribute :test_model => { :test_attrs => {:attr => 1 } }
-         end
-       end
-     end
-   }
-   engine = Authorization::Engine.instance(reader)
+    reader = Authorization::Reader::DSLReader.new
+    reader.parse %(
+      authorization do
+        role :test_role do
+          has_permission_on :branches, :to => :read do
+            if_attribute :test_model => { :test_attrs => {:attr => 1 } }
+          end
+        end
+      end
+    )
+    engine = Authorization::Engine.instance(reader)
 
-   test_model = TestModel.create!
-   test_model.test_attrs.create!(:attr => 0)
-   test_attr = test_model.test_attrs.create!(:attr => 1)
-   test_model.test_attrs.create!(:attr => 3)
-   test_branch = Branch.create!(:test_model => test_model)
+    test_model = TestModel.create!
+    test_model.test_attrs.create!(:attr => 0)
+    test_attr = test_model.test_attrs.create!(:attr => 1)
+    test_model.test_attrs.create!(:attr => 3)
+    test_branch = Branch.create!(:test_model => test_model)
 
-   test_model_2 = TestModel.create!
-   test_attr_2 = test_model_2.test_attrs.create!(:attr => 2)
-   test_branch_2 = Branch.create!(:test_model => test_model_2)
+    test_model_2 = TestModel.create!
+    test_attr_2 = test_model_2.test_attrs.create!(:attr => 2)
+    test_branch_2 = Branch.create!(:test_model => test_model_2)
 
-   test_model_3 = TestModel.create!
-   test_branch_3 = Branch.create!(:test_model => test_model_3)
+    test_model_3 = TestModel.create!
+    test_branch_3 = Branch.create!(:test_model => test_model_3)
 
-   assert engine.permit?(:read, :object => test_branch,
-                         :user => MockUser.new(:test_role))
-   assert !engine.permit?(:read, :object => test_branch_2,
-                         :user => MockUser.new(:test_role))
-   assert !engine.permit?(:read, :object => test_branch_3,
-                         :user => MockUser.new(:test_role))
-   TestModel.delete_all
-   Branch.delete_all
-   TestAttr.delete_all
+    assert engine.permit?(:read, :object => test_branch,
+                                 :user => MockUser.new(:test_role))
+    assert !engine.permit?(:read, :object => test_branch_2,
+                                  :user => MockUser.new(:test_role))
+    assert !engine.permit?(:read, :object => test_branch_3,
+                                  :user => MockUser.new(:test_role))
+    TestModel.delete_all
+    Branch.delete_all
+    TestAttr.delete_all
   end
 
   def test_multiple_roles_with_has_many_through
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role_1 do
           has_permission_on :test_models, :to => :read do
@@ -1919,7 +1909,7 @@ class ModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
     TestModel.delete_all
     TestAttr.delete_all
@@ -1931,8 +1921,8 @@ class ModelTest < Test::Unit::TestCase
     test_model_2.test_attrs.create!.test_attr_throughs.create!
 
     user = MockUser.new(:test_role_1, :test_role_2,
-        :test_attr_through_id => test_model_1.test_attr_throughs.first.id,
-        :test_attr_through_2_id => test_model_2.test_attr_throughs.first.id)
+                        :test_attr_through_id => test_model_1.test_attr_throughs.first.id,
+                        :test_attr_through_2_id => test_model_2.test_attr_throughs.first.id)
     if Rails.version >= '4'
       assert_equal 2, TestModel.with_permissions_to(:read, :user => user).references(:test_models, :test_attr_throughs).length
     else
@@ -1945,7 +1935,7 @@ class ModelTest < Test::Unit::TestCase
 
   def test_model_permitted_to
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :companies, :to => :read do
@@ -1953,7 +1943,7 @@ class ModelTest < Test::Unit::TestCase
           end
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     user = MockUser.new(:test_role)
@@ -1989,13 +1979,13 @@ class ModelTest < Test::Unit::TestCase
 
   def test_model_permitted_to_with_modified_context
     reader = Authorization::Reader::DSLReader.new
-    reader.parse %{
+    reader.parse %(
       authorization do
         role :test_role do
           has_permission_on :companies, :to => :read
         end
       end
-    }
+    )
     Authorization::Engine.instance(reader)
 
     user = MockUser.new(:test_role)
@@ -2005,4 +1995,3 @@ class ModelTest < Test::Unit::TestCase
     assert !allowed_read_company.permitted_to?(:update, :user => user)
   end
 end
-

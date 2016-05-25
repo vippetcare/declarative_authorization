@@ -1,5 +1,5 @@
 garlic do
-  repo 'rails', :url => 'git://github.com/rails/rails'#, :local => "~/dev/vendor/rails"
+  repo 'rails', :url => 'git://github.com/rails/rails' #, :local => "~/dev/vendor/rails"
   repo 'declarative_authorization', :path => '.'
 
   target 'edge'

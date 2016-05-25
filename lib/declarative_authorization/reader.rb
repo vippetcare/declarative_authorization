@@ -54,7 +54,7 @@ module Authorization
     class DSLReader
       attr_reader :privileges_reader, :auth_rules_reader # :nodoc:
 
-      def initialize()
+      def initialize
         @privileges_reader = PrivilegesReader.new
         @auth_rules_reader = AuthorizationRulesReader.new
       end
@@ -103,7 +103,7 @@ module Authorization
 
       # Loads and parses DSL files and returns a new reader
       def self.load(dsl_files)
-        # TODO cache reader in production mode?
+        # TODO: cache reader in production mode?
         reader = new
         dsl_files = [dsl_files].flatten
         dsl_files.each do |file|
@@ -135,7 +135,7 @@ module Authorization
     # The PrivilegeReader handles the part of the authorization DSL in
     # a +privileges+ block.  Here, privilege hierarchies are defined.
     class PrivilegesReader
-      # TODO handle privileges with separated context
+      # TODO: handle privileges with separated context
       attr_reader :privileges, :privilege_hierarchy # :nodoc:
 
       def initialize # :nodoc:
@@ -189,7 +189,7 @@ module Authorization
 
     class AuthorizationRulesReader
       attr_reader :roles, :role_hierarchy, :auth_rules,
-        :role_descriptions, :role_titles, :omnipotent_roles # :nodoc:
+                  :role_descriptions, :role_titles, :omnipotent_roles # :nodoc:
 
       def initialize # :nodoc:
         @current_role = nil
@@ -205,7 +205,7 @@ module Authorization
 
       def initialize_copy(from) # :nodoc:
         [:roles, :role_hierarchy, :auth_rules,
-            :role_descriptions, :role_titles, :omnipotent_roles].each do |attribute|
+         :role_descriptions, :role_titles, :omnipotent_roles].each do |attribute|
           instance_variable_set(:"@#{attribute}", from.send(attribute).clone)
         end
       end
@@ -222,7 +222,7 @@ module Authorization
       #     has_permissions_on ...
       #   end
       #
-      def role(role, options = {}, &block)
+      def role(role, options = {})
         append_role role, options
         @current_role = role
         yield
@@ -274,26 +274,26 @@ module Authorization
       #   Join operator to logically connect the constraint statements inside
       #   of the has_permission_on block.  May be :+and+ or :+or+.  Defaults to :+or+.
       #
-      def has_permission_on(*args, &block)
+      def has_permission_on(*args)
         options = args.extract_options!
         context = args.flatten
 
         raise DSLError, "has_permission_on only allowed in role blocks" if @current_role.nil?
-        options = {:to => [], :join_by => :or}.merge(options)
+        options = { :to => [], :join_by => :or }.merge(options)
 
         privs = options[:to]
         privs = [privs] unless privs.is_a?(Array)
-        raise DSLError, "has_permission_on either needs a block or :to option" if !block_given? and privs.empty?
+        raise DSLError, "has_permission_on either needs a block or :to option" if !block_given? && privs.empty?
 
         file, line = file_and_line_number_from_call_stack
         rule = AuthorizationRule.new(@current_role, privs, context, options[:join_by],
-                   :source_file => file, :source_line => line)
+                                     :source_file => file, :source_line => line)
         @auth_rules << rule
         if block_given?
           @current_rule = rule
           yield
           raise DSLError, "has_permission_on block content specifies no privileges" if rule.privileges.empty?
-          # TODO ensure?
+          # TODO: ensure?
           @current_rule = nil
         end
       end
@@ -450,9 +450,9 @@ module Authorization
         raise DSLError, "if_permitted_to only in has_permission blocks" if @current_rule.nil?
         options[:context] ||= attr_or_hash.delete(:context) if attr_or_hash.is_a?(Hash)
         # only :context option in attr_or_hash:
-        attr_or_hash = nil if attr_or_hash.is_a?(Hash) and attr_or_hash.empty?
+        attr_or_hash = nil if attr_or_hash.is_a?(Hash) && attr_or_hash.empty?
         @current_rule.append_attribute AttributeWithPermission.new(privilege,
-            attr_or_hash, options[:context])
+                                                                   attr_or_hash, options[:context])
       end
 
       # In an if_attribute statement, is says that the value has to be
@@ -521,6 +521,7 @@ module Authorization
       end
 
       private
+
       def parse_attribute_conditions_hash!(hash)
         merge_hash = {}
         hash.each do |key, value|
@@ -528,7 +529,7 @@ module Authorization
             parse_attribute_conditions_hash!(value)
           elsif !value.is_a?(Array)
             merge_hash[key] = [:is, proc { value }]
-          elsif value.is_a?(Array) and !value[0].is_a?(Symbol)
+          elsif value.is_a?(Array) && !value[0].is_a?(Symbol)
             merge_hash[key] = [:is_in, proc { value }]
           end
         end
@@ -538,9 +539,8 @@ module Authorization
       def file_and_line_number_from_call_stack
         caller_parts = caller(2).first.split(':')
         [caller_parts[0] == "(eval)" ? nil : caller_parts[0],
-          caller_parts[1] && caller_parts[1].to_i]
+         caller_parts[1] && caller_parts[1].to_i]
       end
     end
   end
 end
-

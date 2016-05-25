@@ -1,7 +1,6 @@
 require 'rails/generators'
 module Authorization
   class InstallGenerator < Rails::Generators::Base
-
     include Rails::Generators::Migration
     source_root File.expand_path('../templates', __FILE__)
 
@@ -20,8 +19,8 @@ module Authorization
     end
 
     def install_decl_auth
-      habtm_table_name  = "#{name.pluralize}" <= "Roles" ? "#{name.pluralize}Roles" : "Roles#{name.pluralize}" unless options[:user_belongs_to_role]
-      habtm_file_glob  = "#{name.pluralize}" <= "Roles" ? 'db/migrate/*create_*_roles*' : 'db/migrate/*create_roles_*' unless options[:user_belongs_to_role]
+      habtm_table_name = name.pluralize.to_s <= "Roles" ? "#{name.pluralize}Roles" : "Roles#{name.pluralize}" unless options[:user_belongs_to_role]
+      habtm_file_glob = name.pluralize.to_s <= "Roles" ? 'db/migrate/*create_*_roles*' : 'db/migrate/*create_roles_*' unless options[:user_belongs_to_role]
 
       generate 'model', "#{name} #{attributes.join(' ')}" if options[:create_user]
       generate 'model', 'Role title:string'
@@ -40,8 +39,8 @@ module Authorization
       rake 'db:migrate' if options[:commit]
 
       if options[:user_belongs_to_role]
-        inject_into_file "app/models/#{name.singularize.downcase}.rb", before: "\nend" do <<-'RUBY'
-
+        inject_into_file "app/models/#{name.singularize.downcase}.rb", before: "\nend" do
+          <<-'RUBY'
 
   def role_symbols
     [role.title.to_sym]
@@ -49,8 +48,8 @@ module Authorization
         RUBY
         end
       else
-        inject_into_file "app/models/#{name.singularize.downcase}.rb", before: "\nend" do <<-'RUBY'
-
+        inject_into_file "app/models/#{name.singularize.downcase}.rb", before: "\nend" do
+          <<-'RUBY'
 
   def role_symbols
     (roles || []).map {|r| r.title.to_sym}
@@ -59,8 +58,8 @@ module Authorization
         end
       end
 
-      inject_into_file 'db/seeds.rb', after: ".first)\n" do <<-'RUBY'
-
+      inject_into_file 'db/seeds.rb', after: ".first)\n" do
+        <<-'RUBY'
 roles = Role.create([
   {title: 'admin'},
   {title: 'user'}

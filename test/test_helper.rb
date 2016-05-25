@@ -8,7 +8,7 @@ begin
   require 'rails/all'
 rescue LoadError
   # rails 2.3
-  %w(action_pack action_controller active_record active_support initializer).each {|f| require f}
+  %w(action_pack action_controller active_record active_support initializer).each { |f| require f }
 end
 Bundler.require
 
@@ -35,15 +35,14 @@ RAILS_ROOT = File.dirname(__FILE__)
 
 DA_ROOT = Pathname.new(File.expand_path("..", File.dirname(__FILE__)))
 
-require DA_ROOT + File.join(%w{lib declarative_authorization rails_legacy})
-require DA_ROOT + File.join(%w{lib declarative_authorization authorization})
-require DA_ROOT + File.join(%w{lib declarative_authorization in_controller})
-require DA_ROOT + File.join(%w{lib declarative_authorization maintenance})
+require DA_ROOT + File.join(%w(lib declarative_authorization rails_legacy))
+require DA_ROOT + File.join(%w(lib declarative_authorization authorization))
+require DA_ROOT + File.join(%w(lib declarative_authorization in_controller))
+require DA_ROOT + File.join(%w(lib declarative_authorization maintenance))
 
 begin
   require 'ruby-debug'
 rescue MissingSourceFile; end
-
 
 class MockDataObject
   def initialize(attrs = {})
@@ -68,7 +67,7 @@ class MockDataObject
   end
 
   def self.find(*args)
-    raise StandardError, "Couldn't find #{self.name} with id #{args[0].inspect}" unless args[0]
+    raise StandardError, "Couldn't find #{name} with id #{args[0].inspect}" unless args[0]
     new :id => args[0]
   end
 
@@ -81,10 +80,10 @@ end
 class MockUser < MockDataObject
   def initialize(*roles)
     options = roles.last.is_a?(::Hash) ? roles.pop : {}
-    super({:role_symbols => roles, :login => hash}.merge(options))
+    super({ :role_symbols => roles, :login => hash }.merge(options))
   end
 
-  def initialize_copy(other)
+  def initialize_copy(_other)
     @role_symbols = @role_symbols.clone
   end
 end
@@ -110,7 +109,7 @@ class MocksController < ActionController::Base
     define_action_methods :index, :show, :edit, :update, :new, :create, :destroy
   end
 
-  def logger(*args)
+  def logger(*_args)
     Class.new do
       def warn(*args)
         #p args
@@ -125,7 +124,7 @@ class MocksController < ActionController::Base
 end
 
 if Rails.version < "3"
-  ActiveRecord::Base.establish_connection({:adapter => 'sqlite3', :database => ':memory:'})
+  ActiveRecord::Base.establish_connection(:adapter => 'sqlite3', :database => ':memory:')
   ActionController::Routing::Routes.draw do |map|
     map.connect ':controller/:action/:id'
   end
@@ -167,10 +166,7 @@ else
 end
 
 ActionController::Base.send :include, Authorization::AuthorizationInController
-if Rails.version < "3"
-  require "action_controller/test_process"
-end
-
+require "action_controller/test_process" if Rails.version < "3"
 
 if Rails.version < "4"
   class Test::Unit::TestCase

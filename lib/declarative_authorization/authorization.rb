@@ -5,22 +5,22 @@ require "forwardable"
 
 module Authorization
   # An exception raised if anything goes wrong in the Authorization realm
-  class AuthorizationError < StandardError ; end
+  class AuthorizationError < StandardError; end
   # NotAuthorized is raised if the current user is not allowed to perform
   # the given operation possibly on a specific object.
-  class NotAuthorized < AuthorizationError ; end
+  class NotAuthorized < AuthorizationError; end
   # AttributeAuthorizationError is more specific than NotAuthorized, signaling
   # that the access was denied on the grounds of attribute conditions.
-  class AttributeAuthorizationError < NotAuthorized ; end
+  class AttributeAuthorizationError < NotAuthorized; end
   # AuthorizationUsageError is used whenever a situation is encountered
   # in which the application misused the plugin.  That is, if, e.g.,
   # authorization rules may not be evaluated.
-  class AuthorizationUsageError < AuthorizationError ; end
+  class AuthorizationUsageError < AuthorizationError; end
   # NilAttributeValueError is raised by Attribute#validate? when it hits a nil attribute value.
   # The exception is raised to ensure that the entire rule is invalidated.
   class NilAttributeValueError < AuthorizationError; end
 
-  AUTH_DSL_FILES = [Pathname.new(Rails.root || '').join("config", "authorization_rules.rb").to_s] unless defined? AUTH_DSL_FILES
+  AUTH_DSL_FILES = [Pathname.new(Rails.root || '').join("config", "authorization_rules.rb").to_s].freeze unless defined? AUTH_DSL_FILES
 
   # Controller-independent method for retrieving the current user.
   # Needed for model security where the current controller is not available.
@@ -152,8 +152,8 @@ module Authorization
       }.merge(options)
 
       # Make sure we're handling all privileges as symbols.
-      privilege = privilege.is_a?( Array ) ?
-                  privilege.flatten.collect { |priv| priv.to_sym } :
+      privilege = privilege.is_a?(Array) ?
+                  privilege.flatten.collect(&:to_sym) :
                   privilege.to_sym
 
       #
@@ -167,15 +167,19 @@ module Authorization
         options[:object] = (Rails.version < "3.0" ? options[:object] : options[:object].where(nil)).new
       end
 
-      options[:context] ||= options[:object] && (
-        options[:object].class.respond_to?(:decl_auth_context) ?
-            options[:object].class.decl_auth_context :
-            options[:object].class.name.tableize.to_sym
-      ) rescue NoMethodError
+      begin
+        options[:context] ||= options[:object] && (
+                options[:object].class.respond_to?(:decl_auth_context) ?
+                    options[:object].class.decl_auth_context :
+                    options[:object].class.name.tableize.to_sym
+        )
+      rescue
+        NoMethodError
+      end
 
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
 
-      return true if roles.is_a?(Array) and not (roles & omnipotent_roles).empty?
+      return true if roles.is_a?(Array) && !(roles & omnipotent_roles).empty?
 
       # find a authorization rule that matches for at least one of the roles and
       # at least one of the given privileges
@@ -189,9 +193,9 @@ module Authorization
 
       if options[:bang]
         if rules.empty?
-          raise NotAuthorized, "No matching rules found for #{privilege} for User with id #{user.try(:id)} " +
-            "(roles #{roles.inspect}, privileges #{privileges.inspect}, " +
-            "context #{options[:context].inspect})."
+          raise NotAuthorized, "No matching rules found for #{privilege} for User with id #{user.try(:id)} " \
+                               "(roles #{roles.inspect}, privileges #{privileges.inspect}, " \
+                               "context #{options[:context].inspect})."
         else
           raise AttributeAuthorizationError, "#{privilege} not allowed for User with id #{user.try(:id)} on #{(options[:object] || options[:context]).inspect}."
         end
@@ -203,7 +207,7 @@ module Authorization
     # Calls permit! but doesn't raise authorization errors. If no exception is
     # raised, permit? returns true and yields  to the optional block.
     def permit?(privilege, options = {}) # :yields:
-      if permit!(privilege, options.merge(:bang=> false))
+      if permit!(privilege, options.merge(:bang => false))
         yield if block_given?
         true
       else
@@ -228,12 +232,12 @@ module Authorization
     # [:+user+]  See permit!
     #
     def obligations(privilege, options = {})
-      options = {:context => nil}.merge(options)
+      options = { :context => nil }.merge(options)
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
 
       permit!(privilege, :skip_attribute_test => true, :user => user, :context => options[:context])
 
-      return [] if roles.is_a?(Array) and not (roles & omnipotent_roles).empty?
+      return [] if roles.is_a?(Array) && !(roles & omnipotent_roles).empty?
 
       attr_validator = AttributeValidator.new(self, user, nil, privilege, options[:context])
       matching_auth_rules(roles, privileges, options[:context]).collect do |rule|
@@ -259,16 +263,16 @@ module Authorization
     def roles_for(user)
       user ||= Authorization.current_user
       raise AuthorizationUsageError, "User object doesn't respond to roles (#{user.try(:id)})" \
-        if !user.respond_to?(:role_symbols) and !user.respond_to?(:roles)
+        if !user.respond_to?(:role_symbols) && !user.respond_to?(:roles)
 
-      Rails.logger.info("The use of user.roles is deprecated.  Please add a method " +
-          "role_symbols to your User model.") if defined?(Rails) and Rails.respond_to?(:logger) and !user.respond_to?(:role_symbols)
+      Rails.logger.info("The use of user.roles is deprecated.  Please add a method " \
+          "role_symbols to your User model.") if defined?(Rails) && Rails.respond_to?(:logger) && !user.respond_to?(:role_symbols)
 
       roles = user.respond_to?(:role_symbols) ? user.role_symbols : user.roles
 
-      raise AuthorizationUsageError, "User.#{user.respond_to?(:role_symbols) ? 'role_symbols' : 'roles'} " +
-        "doesn't return an Array of Symbols (#{roles.inspect})" \
-            if !roles.is_a?(Array) or (!roles.empty? and !roles[0].is_a?(Symbol))
+      raise AuthorizationUsageError, "User.#{user.respond_to?(:role_symbols) ? 'role_symbols' : 'roles'} " \
+                                     "doesn't return an Array of Symbols (#{roles.inspect})" \
+            if !roles.is_a?(Array) || (!roles.empty? && !roles[0].is_a?(Symbol))
 
       (roles.empty? ? [Authorization.default_role] : roles)
     end
@@ -280,7 +284,13 @@ module Authorization
 
     def self.development_reload?
       if Rails.env.development?
-        mod_time = AUTH_DSL_FILES.map { |m| File.mtime(m) rescue Time.at(0) }.flatten.max
+        mod_time = AUTH_DSL_FILES.map do |m|
+          begin
+                                   File.mtime(m)
+                                 rescue
+                                   Time.at(0)
+                                 end
+        end.flatten.max
         @@auth_dsl_last_modified ||= mod_time
         if mod_time > @@auth_dsl_last_modified
           @@auth_dsl_last_modified = mod_time
@@ -293,7 +303,7 @@ module Authorization
     # yet.  If +dsl_file+ is given, it is passed on to Engine.new and
     # a new instance is always created.
     def self.instance(dsl_file = nil)
-      if dsl_file or development_reload?
+      if dsl_file || development_reload?
         @@instance = new(dsl_file)
       else
         @@instance ||= new
@@ -311,12 +321,13 @@ module Authorization
       end
 
       def evaluate(value_block)
-        # TODO cache?
+        # TODO: cache?
         instance_eval(&value_block)
       end
     end
 
     private
+
     def user_roles_privleges_from_options(privilege, options)
       options = {
         :user => nil,
@@ -326,8 +337,8 @@ module Authorization
       user = options[:user] || Authorization.current_user
       privileges = privilege.is_a?(Array) ? privilege : [privilege]
 
-      raise AuthorizationUsageError, "No user object given for user id (#{user.try(:id)}) or " +
-        "set through Authorization.current_user" unless user
+      raise AuthorizationUsageError, "No user object given for user id (#{user.try(:id)}) or " \
+                                     "set through Authorization.current_user" unless user
 
       roles = options[:user_roles] || flatten_roles(roles_for(user))
       privileges = flatten_privileges privileges, options[:context]
@@ -335,8 +346,8 @@ module Authorization
     end
 
     def flatten_roles(roles, flattened_roles = Set.new)
-      # TODO caching?
-      roles.reject {|role| flattened_roles.include?(role)}.each do |role|
+      # TODO: caching?
+      roles.reject { |role| flattened_roles.include?(role) }.each do |role|
         flattened_roles << role
         flatten_roles(role_hierarchy[role], flattened_roles) if role_hierarchy[role]
       end
@@ -345,9 +356,9 @@ module Authorization
 
     # Returns the privilege hierarchy flattened for given privileges in context.
     def flatten_privileges(privileges, context = nil, flattened_privileges = Set.new)
-      # TODO caching?
+      # TODO: caching?
       raise AuthorizationUsageError, "No context given or inferable from object" unless context
-      privileges.reject {|priv| flattened_privileges.include?(priv)}.each do |priv|
+      privileges.reject { |priv| flattened_privileges.include?(priv) }.each do |priv|
         flattened_privileges << priv
         flatten_privileges(rev_priv_hierarchy[[priv, nil]], context, flattened_privileges) if rev_priv_hierarchy[[priv, nil]]
         flatten_privileges(rev_priv_hierarchy[[priv, context]], context, flattened_privileges) if rev_priv_hierarchy[[priv, context]]
@@ -360,7 +371,6 @@ module Authorization
     end
   end
 
-
   class AuthorizationRuleSet
     include Enumerable
     extend Forwardable
@@ -371,8 +381,8 @@ module Authorization
       reset!
     end
 
-    def initialize_copy(source)
-      @rules = @rules.collect {|rule| rule.clone}
+    def initialize_copy(_source)
+      @rules = @rules.collect(&:clone)
       reset!
     end
 
@@ -399,8 +409,9 @@ module Authorization
     end
 
     private
+
     def reset!
-      @cached_auth_rules =nil
+      @cached_auth_rules = nil
     end
 
     def cached_auth_rules
@@ -418,10 +429,10 @@ module Authorization
 
   class AuthorizationRule
     attr_reader :attributes, :contexts, :role, :privileges, :join_operator,
-        :source_file, :source_line
+                :source_file, :source_line
 
     def initialize(role, privileges = [], contexts = nil, join_operator = :or,
-          options = {})
+                   options = {})
       @role = role
       @privileges = Set.new(privileges)
       @contexts = Set.new((contexts && !contexts.is_a?(Array) ? [contexts] : contexts))
@@ -431,10 +442,10 @@ module Authorization
       @source_line = options[:source_line]
     end
 
-    def initialize_copy(from)
+    def initialize_copy(_from)
       @privileges = @privileges.clone
       @contexts = @contexts.clone
-      @attributes = @attributes.collect {|attribute| attribute.clone }
+      @attributes = @attributes.collect(&:clone)
     end
 
     def append_privileges(privs)
@@ -447,12 +458,12 @@ module Authorization
 
     def matches?(roles, privs, context = nil)
       roles = [roles] unless roles.is_a?(Array)
-      @contexts.include?(context) and roles.include?(@role) and
-        not (@privileges & privs).empty?
+      @contexts.include?(context) && roles.include?(@role) &&
+        !(@privileges & privs).empty?
     end
 
     def validate?(attr_validator, skip_attribute = false)
-      skip_attribute or @attributes.empty? or
+      skip_attribute || @attributes.empty? ||
         @attributes.send(@join_operator == :and ? :all? : :any?) do |attr|
           begin
             attr.validate?(attr_validator)
@@ -473,13 +484,13 @@ module Authorization
         end
       end
 
-      if exceptions.length > 0 and (@join_operator == :and or exceptions.length == @attributes.length)
-        raise NotAuthorized, "Missing authorization in collecting obligations: #{exceptions.map(&:to_s) * ", "}"
+      if !exceptions.empty? && (@join_operator == :and || exceptions.length == @attributes.length)
+        raise NotAuthorized, "Missing authorization in collecting obligations: #{exceptions.map(&:to_s) * ', '}"
       end
 
-      if @join_operator == :and and !obligations.empty?
+      if @join_operator == :and && !obligations.empty?
         # cross product of OR'ed obligations in arrays
-        arrayed_obligations = obligations.map {|obligation| obligation.is_a?(Hash) ? [obligation] : obligation}
+        arrayed_obligations = obligations.map { |obligation| obligation.is_a?(Hash) ? [obligation] : obligation }
         merged_obligations = arrayed_obligations.first
         arrayed_obligations[1..-1].each do |inner_obligations|
           previous_merged_obligations = merged_obligations
@@ -497,7 +508,7 @@ module Authorization
     end
 
     def to_long_s
-      attributes.collect {|attr| attr.to_long_s } * "; "
+      attributes.collect(&:to_long_s) * "; "
     end
   end
 
@@ -509,7 +520,7 @@ module Authorization
       @conditions_hash = conditions_hash
     end
 
-    def initialize_copy(from)
+    def initialize_copy(_from)
       @conditions_hash = deep_hash_clone(@conditions_hash)
     end
 
@@ -517,8 +528,8 @@ module Authorization
       object ||= attr_validator.object
       return false unless object
 
-      if ( Authorization.is_a_association_proxy?(object) &&
-           object.respond_to?(:empty?) )
+      if Authorization.is_a_association_proxy?(object) &&
+         object.respond_to?(:empty?)
         return false if object.empty?
         object.each do |member|
           return true if validate?(attr_validator, member, hash)
@@ -533,12 +544,12 @@ module Authorization
             attr_value.any? do |inner_value|
               validate?(attr_validator, inner_value, value)
             end
-          elsif attr_value == nil
+          elsif attr_value.nil?
             raise NilAttributeValueError, "Attribute #{attr.inspect} is nil in #{object.inspect}."
           else
             validate?(attr_validator, attr_value, value)
           end
-        elsif value.is_a?(Array) and value.length == 2 and value.first.is_a?(Symbol)
+        elsif value.is_a?(Array) && value.length == 2 && value.first.is_a?(Symbol)
           evaluated = if value[1].is_a?(Proc)
                         attr_validator.evaluate(value[1])
                       else
@@ -553,41 +564,41 @@ module Authorization
             begin
               attr_value.include?(evaluated)
             rescue NoMethodError => e
-              raise AuthorizationUsageError, "Operator contains requires a " +
-                  "subclass of Enumerable as attribute value, got: #{attr_value.inspect} " +
-                  "contains #{evaluated.inspect}: #{e}"
+              raise AuthorizationUsageError, "Operator contains requires a " \
+                                             "subclass of Enumerable as attribute value, got: #{attr_value.inspect} " \
+                                             "contains #{evaluated.inspect}: #{e}"
             end
           when :does_not_contain
             begin
               !attr_value.include?(evaluated)
             rescue NoMethodError => e
-              raise AuthorizationUsageError, "Operator does_not_contain requires a " +
-                  "subclass of Enumerable as attribute value, got: #{attr_value.inspect} " +
-                  "does_not_contain #{evaluated.inspect}: #{e}"
+              raise AuthorizationUsageError, "Operator does_not_contain requires a " \
+                                             "subclass of Enumerable as attribute value, got: #{attr_value.inspect} " \
+                                             "does_not_contain #{evaluated.inspect}: #{e}"
             end
           when :intersects_with
             begin
               !(evaluated.to_set & attr_value.to_set).empty?
             rescue NoMethodError => e
-              raise AuthorizationUsageError, "Operator intersects_with requires " +
-                  "subclasses of Enumerable, got: #{attr_value.inspect} " +
-                  "intersects_with #{evaluated.inspect}: #{e}"
+              raise AuthorizationUsageError, "Operator intersects_with requires " \
+                                             "subclasses of Enumerable, got: #{attr_value.inspect} " \
+                                             "intersects_with #{evaluated.inspect}: #{e}"
             end
           when :is_in
             begin
               evaluated.include?(attr_value)
             rescue NoMethodError => e
-              raise AuthorizationUsageError, "Operator is_in requires a " +
-                  "subclass of Enumerable as value, got: #{attr_value.inspect} " +
-                  "is_in #{evaluated.inspect}: #{e}"
+              raise AuthorizationUsageError, "Operator is_in requires a " \
+                                             "subclass of Enumerable as value, got: #{attr_value.inspect} " \
+                                             "is_in #{evaluated.inspect}: #{e}"
             end
           when :is_not_in
             begin
               !evaluated.include?(attr_value)
             rescue NoMethodError => e
-              raise AuthorizationUsageError, "Operator is_not_in requires a " +
-                  "subclass of Enumerable as value, got: #{attr_value.inspect} " +
-                  "is_not_in #{evaluated.inspect}: #{e}"
+              raise AuthorizationUsageError, "Operator is_not_in requires a " \
+                                             "subclass of Enumerable as value, got: #{attr_value.inspect} " \
+                                             "is_not_in #{evaluated.inspect}: #{e}"
             end
           when :lt
             attr_value && attr_value < evaluated
@@ -612,7 +623,7 @@ module Authorization
       hash.each do |attr, value|
         if value.is_a?(Hash)
           hash[attr] = obligation(attr_validator, value)
-        elsif value.is_a?(Array) and value.length == 2
+        elsif value.is_a?(Array) && value.length == 2
           hash[attr] = [value[0], attr_validator.evaluate(value[1])]
         else
           raise AuthorizationError, "Wrong conditions hash format"
@@ -626,7 +637,7 @@ module Authorization
         hash.inject({}) do |memo, key_val|
           key, val = key_val
           memo[key] = case val
-                      when Array then "#{val[0]} { #{val[1].respond_to?(:to_ruby) ? val[1].to_ruby.gsub(/^proc \{\n?(.*)\n?\}$/m, '\1') : "..."} }"
+                      when Array then "#{val[0]} { #{val[1].respond_to?(:to_ruby) ? val[1].to_ruby.gsub(/^proc \{\n?(.*)\n?\}$/m, '\1') : '...'} }"
                       when Hash then to_long_s(val)
                       end
           memo
@@ -637,14 +648,13 @@ module Authorization
     end
 
     protected
+
     def object_attribute_value(object, attr)
-      begin
-        object.send(attr)
-      rescue ArgumentError, NoMethodError => e
-        raise AuthorizationUsageError, "Error occurred while validating attribute ##{attr} on #{object.inspect}: #{e}.\n" +
-          "Please check your authorization rules and ensure the attribute is correctly spelled and \n" +
-          "corresponds to a method on the model you are authorizing for."
-      end
+      object.send(attr)
+    rescue ArgumentError, NoMethodError => e
+      raise AuthorizationUsageError, "Error occurred while validating attribute ##{attr} on #{object.inspect}: #{e}.\n" \
+                                     "Please check your authorization rules and ensure the attribute is correctly spelled and \n" \
+                                     "corresponds to a method on the model you are authorizing for."
     end
 
     def deep_hash_clone(hash)
@@ -673,7 +683,7 @@ module Authorization
       @attr_hash = attr_or_hash
     end
 
-    def initialize_copy(from)
+    def initialize_copy(_from)
       @attr_hash = deep_hash_clone(@attr_hash) if @attr_hash.is_a?(Hash)
     end
 
@@ -698,7 +708,7 @@ module Authorization
       when Hash
         hash_or_attr.all? do |attr, sub_hash|
           attr_value = object_attribute_value(object, attr)
-          if attr_value == nil
+          if attr_value.nil?
             raise NilAttributeValueError, "Attribute #{attr.inspect} is nil in #{object.inspect}."
           elsif attr_value.is_a?(Enumerable)
             attr_value.any? do |inner_value|
@@ -733,23 +743,23 @@ module Authorization
         end
 
         obligations = attr_validator.engine.obligations(@privilege,
-                          :context => @context,
-                          :user    => attr_validator.user)
+                                                        :context => @context,
+                                                        :user    => attr_validator.user)
 
-        obligations.collect {|obl| {hash_or_attr => obl} }
+        obligations.collect { |obl| { hash_or_attr => obl } }
       when Hash
         obligations_array_attrs = []
         obligations =
-            hash_or_attr.inject({}) do |all, pair|
-              attr, sub_hash = pair
-              all[attr] = obligation(attr_validator, sub_hash, path + [attr])
-              if all[attr].length > 1
-                obligations_array_attrs << attr
-              else
-                all[attr] = all[attr].first
-              end
-              all
+          hash_or_attr.inject({}) do |all, pair|
+            attr, sub_hash = pair
+            all[attr] = obligation(attr_validator, sub_hash, path + [attr])
+            if all[attr].length > 1
+              obligations_array_attrs << attr
+            else
+              all[attr] = all[attr].first
             end
+            all
+          end
         obligations = [obligations]
         obligations_array_attrs.each do |attr|
           next_array_size = obligations.first[attr].length
@@ -764,8 +774,8 @@ module Authorization
         obligations
       when NilClass
         attr_validator.engine.obligations(@privilege,
-            :context => attr_validator.context,
-            :user    => attr_validator.user)
+                                          :context => attr_validator.context,
+                                          :user    => attr_validator.user)
       else
         raise AuthorizationError, "Wrong conditions hash format: #{hash_or_attr.inspect}"
       end
@@ -776,10 +786,11 @@ module Authorization
     end
 
     private
+
     def self.reflection_for_path(parent_model, path)
       reflection = path.empty? ? parent_model : begin
         parent = reflection_for_path(parent_model, path[0..-2])
-        if !parent.respond_to?(:proxy_reflection) and parent.respond_to?(:klass)
+        if !parent.respond_to?(:proxy_reflection) && parent.respond_to?(:klass)
           parent.klass.reflect_on_association(path.last)
         else
           parent.reflect_on_association(path.last)
@@ -800,4 +811,3 @@ module Authorization
     end
   end
 end
-

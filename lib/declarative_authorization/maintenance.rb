@@ -71,7 +71,7 @@ module Authorization
           permission_by_action = {}
           controller.all_filter_access_permissions.each do |controller_permissions|
             catchall_permissions << controller_permissions if controller_permissions.actions.include?(:all)
-            controller_permissions.actions.reject {|action| action == :all}.each do |action|
+            controller_permissions.actions.reject { |action| action == :all }.each do |action|
               permission_by_action[action] = controller_permissions
             end
           end
@@ -160,7 +160,7 @@ module Authorization
     #   should_be_allowed_to :create, :object => car, :context => :vehicles, :user => a_normal_user
     def should_be_allowed_to(privilege, *args)
       options = {}
-      if(args.first.class == Hash)
+      if args.first.class == Hash
         options = args.extract_options!
       else
         options[args[0].is_a?(Symbol) ? :context : :object] = args[0]
@@ -173,7 +173,7 @@ module Authorization
     # See should_be_allowed_to
     def should_not_be_allowed_to(privilege, *args)
       options = {}
-      if(args.first.class == Hash)
+      if args.first.class == Hash
         options = args.extract_options!
       else
         options[args[0].is_a?(Symbol) ? :context : :object] = args[0]
@@ -182,8 +182,8 @@ module Authorization
     end
 
     def request_with(user, method, xhr, action, params = {},
-        session = {}, flash = {})
-      session = session.merge({:user => user, :user_id => user && user.id})
+                     session = {}, flash = {})
+      session = session.merge(:user => user, :user_id => user && user.id)
       with_user(user) do
         if xhr
           xhr method, action, params, session, flash
