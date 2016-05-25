@@ -48,7 +48,7 @@ module Authorization
       if Rails.version < "3"
         super(model, options)
       else
-         super(model, model.table_name)
+        super(model, model.table_name)
       end
     end
 
@@ -84,7 +84,7 @@ module Authorization
         steps.each do |step, next_steps|
           path_to_this_point = [past_steps, step].flatten
           reflection = begin
-                         reflection_for( path_to_this_point )
+                         reflection_for(path_to_this_point)
                        rescue
                          nil
                        end

@@ -25,13 +25,13 @@ namespace :auth do
     end
 
     model_all = `grep -l "Base\.using_access_control" #{Rails.root}/config/*.rb #{Rails.root}/config/initializers/*.rb`.split("\n")
-    if model_all.count > 0
-      model_files = Dir.glob("#{Rails.root}/app/models/*.rb").reject do |item|
-        item.match(/_observer\.rb/)
-      end
-    else
-      model_files = `grep -l "^[[:space:]]*using_access_control" #{Rails.root}/app/models/*.rb`.split("\n")
-    end
+    model_files = if model_all.count > 0
+                    Dir.glob("#{Rails.root}/app/models/*.rb").reject do |item|
+                      item.match(/_observer\.rb/)
+                    end
+                  else
+                    `grep -l "^[[:space:]]*using_access_control" #{Rails.root}/app/models/*.rb`.split("\n")
+                  end
     models_with_ac = model_files.collect { |mf| mf.sub(/^.*\//, "").sub(".rb", "").tableize.to_sym }
     model_security_privs = [:create, :read, :update, :delete]
     models_with_ac.each { |m| perms += model_security_privs.collect { |msp| [msp, m] } }

@@ -230,11 +230,11 @@ if Authorization.activate_authorization_rules_browser?
     end
 
     def filter_roles
-      if params[:filter_roles].blank? 
-       nil
-      else 
-        if (params[:filter_roles].is_a?(Array)
-         params[:filter_roles].map(&:to_sym) 
+      if params[:filter_roles].blank?
+        nil
+      else
+        if params[:filter_roles].is_a?(Array)
+          params[:filter_roles].map(&:to_sym)
         else
           [params[:filter_roles].to_sym]
         end

@@ -151,7 +151,7 @@ module Authorization
     end
 
     def new_controller_object_from_params(context_without_namespace, parent_context_without_namespace, _strong_params) # :nodoc:
-      model_or_proxy = if parent_context_without_namespace 
+      model_or_proxy = if parent_context_without_namespace
                          instance_variable_get(:"@#{parent_context_without_namespace.to_s.singularize}").send(context_without_namespace.to_sym)
                        else
                          context_without_namespace.to_s.classify.constantize

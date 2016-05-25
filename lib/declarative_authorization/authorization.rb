@@ -152,9 +152,11 @@ module Authorization
       }.merge(options)
 
       # Make sure we're handling all privileges as symbols.
-      privilege = privilege.is_a?(Array) ?
-                  privilege.flatten.collect(&:to_sym) :
-                  privilege.to_sym
+      privilege = if privilege.is_a?(Array)
+                    privilege.flatten.collect(&:to_sym)
+                  else
+                    privilege.to_sym
+                  end
 
       #
       # If the object responds to :proxy_reflection, we're probably working with

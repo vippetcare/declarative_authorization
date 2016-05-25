@@ -467,8 +467,8 @@ class AuthorizationTest < Test::Unit::TestCase
                                  :user => MockUser.new(:test_role, :test_attr => 2),
                                  :object => MockDataObject.new(:test_attr => 3))
     assert(!engine.permit?(:test, :context => :permissions,
-                                      :user => MockUser.new(:test_role, :test_attr => 2),
-                                      :object => MockDataObject.new(:test_attr => 1)))
+                                  :user => MockUser.new(:test_role, :test_attr => 2),
+                                  :object => MockDataObject.new(:test_attr => 1)))
   end
 
   def test_attribute_is_not
@@ -638,8 +638,8 @@ class AuthorizationTest < Test::Unit::TestCase
                                  :object => MockDataObject.new(:test_attr => 1))
     # object > user -> fail
     assert(!engine.permit?(:test, :context => :permissions,
-                                      :user => MockUser.new(:test_role, :test_attr => 1),
-                                      :object => MockDataObject.new(:test_attr => 2))))
+                                  :user => MockUser.new(:test_role, :test_attr => 1),
+                                  :object => MockDataObject.new(:test_attr => 2)))
   end
 
   def test_attribute_gt
@@ -665,12 +665,12 @@ class AuthorizationTest < Test::Unit::TestCase
                                  :object => MockDataObject.new(:test_attr => 3))
     # object = user -> fail
     assert(!engine.permit?(:test, :context => :permissions,
-                                      :user => MockUser.new(:test_role, :test_attr => 1),
-                                      :object => MockDataObject.new(:test_attr => 1))))
+                                  :user => MockUser.new(:test_role, :test_attr => 1),
+                                  :object => MockDataObject.new(:test_attr => 1)))
     # object < user -> fail
     assert(!engine.permit?(:test, :context => :permissions,
-                                      :user => MockUser.new(:test_role, :test_attr => 2),
-                                      :object => MockDataObject.new(:test_attr => 1))))
+                                  :user => MockUser.new(:test_role, :test_attr => 2),
+                                  :object => MockDataObject.new(:test_attr => 1)))
   end
 
   def test_attribute_gte
@@ -700,8 +700,8 @@ class AuthorizationTest < Test::Unit::TestCase
                                  :object => MockDataObject.new(:test_attr => 1))
     # object < user -> fail
     assert(!engine.permit?(:test, :context => :permissions,
-                                      :user => MockUser.new(:test_role, :test_attr => 2),
-                                      :object => MockDataObject.new(:test_attr => 1))))
+                                  :user => MockUser.new(:test_role, :test_attr => 2),
+                                  :object => MockDataObject.new(:test_attr => 1)))
   end
 
   def test_attribute_deep
@@ -744,7 +744,7 @@ class AuthorizationTest < Test::Unit::TestCase
 
     company = MockDataObject.new(:branches => [
                                    MockDataObject.new(:city => 'Barcelona'),
-        MockDataObject.new(:city => 'Paris')
+                                   MockDataObject.new(:city => 'Paris')
                                  ])
     assert engine.permit!(:read, :context => :companies,
                                  :user => MockUser.new(:test_role, :city => 'Paris'),

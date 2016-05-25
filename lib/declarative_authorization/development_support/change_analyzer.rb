@@ -159,15 +159,15 @@ module Authorization
         end
 
         def inspect
-          collect do |info| 
-            if info.respond_to?(:to_sym) 
-              info.to_sym 
+          collect do |info|
+            if info.respond_to?(:to_sym)
+              info.to_sym
+            else
+              if info.respond_to?(:login)
+                info.login
               else
-                if  info.respond_to?(:login) 
-                  info.login 
-                else
-                  info.class.name
-                end
+                info.class.name
+              end
               end
           end.inspect
         end
