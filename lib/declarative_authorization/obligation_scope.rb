@@ -270,7 +270,7 @@ module Authorization
             bindvar = "#{attribute_table_alias}__#{attribute_name}_#{obligation_index}".to_sym
 
             sql_attribute = "#{parent_model.connection.quote_table_name(attribute_table_alias)}." \
-                            (parent_model.connection.quote_table_name(attribute_name)).to_s
+                            "#{parent_model.connection.quote_table_name(attribute_name)}"
             if value.nil? && [:is, :is_not].include?(operator)
               obligation_conds << "#{sql_attribute} IS #{[:contains, :is].include?(operator) ? '' : 'NOT '}NULL"
             else

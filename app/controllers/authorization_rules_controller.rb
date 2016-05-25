@@ -229,13 +229,25 @@ if Authorization.activate_authorization_rules_browser?
       raise Exception, "Error in call to graphviz: #{e}"
     end
 
+    def filter_roles
+      if params[:filter_roles].blank? 
+       nil
+      else 
+        if (params[:filter_roles].is_a?(Array)
+         params[:filter_roles].map(&:to_sym) 
+        else
+          [params[:filter_roles].to_sym]
+        end
+      end
+    end
+
     def graph_options
       {
         :effective_role_privs => !params[:effective_role_privs].blank?,
         :privilege_hierarchy => !params[:privilege_hierarchy].blank?,
         :stacked_roles => !params[:stacked_roles].blank?,
         :only_relevant_roles => !params[:only_relevant_roles].blank?,
-        :filter_roles => params[:filter_roles].blank? ? nil : (params[:filter_roles].is_a?(Array) ? params[:filter_roles].map(&:to_sym) : [params[:filter_roles].to_sym]),
+        :filter_roles => filter_roles,
         :filter_contexts => params[:filter_contexts].blank? ? nil : params[:filter_contexts].to_sym,
         :highlight_privilege => params[:highlight_privilege].blank? ? nil : params[:highlight_privilege].to_sym,
         :changes => deserialize_changes(params[:changes]),

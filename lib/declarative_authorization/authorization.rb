@@ -467,7 +467,7 @@ module Authorization
         @attributes.send(@join_operator == :and ? :all? : :any?) do |attr|
           begin
             attr.validate?(attr_validator)
-          rescue NilAttributeValueError => e
+          rescue NilAttributeValueError
             nil # Bumping up against a nil attribute value flunks the rule.
           end
         end
@@ -784,8 +784,6 @@ module Authorization
     def to_long_s
       "if_permitted_to #{@privilege.inspect}, #{@attr_hash.inspect}"
     end
-
-    private
 
     def self.reflection_for_path(parent_model, path)
       reflection = path.empty? ? parent_model : begin

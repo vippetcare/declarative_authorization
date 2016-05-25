@@ -468,7 +468,7 @@ class AuthorizationTest < Test::Unit::TestCase
                                  :object => MockDataObject.new(:test_attr => 3))
     assert(!engine.permit?(:test, :context => :permissions,
                                       :user => MockUser.new(:test_role, :test_attr => 2),
-                                      :object => MockDataObject.new(:test_attr => 1))))
+                                      :object => MockDataObject.new(:test_attr => 1)))
   end
 
   def test_attribute_is_not
