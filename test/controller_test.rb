@@ -45,7 +45,7 @@ class BasicControllerTest < ActionController::TestCase
   end
 
   def test_filter_access
-    assert !@controller.class.before_actions.empty?
+    assert !@controller.class.before_filters.empty?
 
     reader = Authorization::Reader::DSLReader.new
     reader.parse %{
