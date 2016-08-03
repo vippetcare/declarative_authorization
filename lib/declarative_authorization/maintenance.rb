@@ -7,7 +7,7 @@ module Authorization
   module Maintenance
     # Disables access control for the given block.  Appropriate for
     # maintenance operation at the Rails console or in test case setup.
-    # 
+    #
     # For use in the Rails console:
     #  require "vendor/plugins/declarative_authorization/lib/maintenance"
     #  include Authorization::Maintenance
@@ -75,8 +75,7 @@ module Authorization
               permission_by_action[action] = controller_permissions
             end
           end
-
-          actions = controller.public_instance_methods(false) - controller.hidden_actions.to_a
+          actions = controller.public_instance_methods(false) - controller.private_methods
           memo[controller] = actions.inject({}) do |actions_memo, action|
             action_sym = action.to_sym
             actions_memo[action_sym] =
@@ -102,27 +101,27 @@ module Authorization
       end
     end
   end
-  
+
   # TestHelper provides assert methods and controller request methods which
   # take authorization into account and set the current user to a specific
   # one.
   #
-  # Defines get_with, post_with, get_by_xhr_with etc. for methods 
+  # Defines get_with, post_with, get_by_xhr_with etc. for methods
   # get, post, put, delete each with the signature
   #   get_with(user, action, params = {}, session = {}, flash = {})
   #
   # Use it by including it in your TestHelper:
-  #  require File.expand_path(File.dirname(__FILE__) + 
+  #  require File.expand_path(File.dirname(__FILE__) +
   #    "/../vendor/plugins/declarative_authorization/lib/maintenance")
-  #  class Test::Unit::TestCase 
+  #  class Test::Unit::TestCase
   #    include Authorization::TestHelper
   #    ...
-  #    
+  #
   #    def admin
   #      # create admin user
   #    end
   #  end
-  # 
+  #
   #  class SomeControllerTest < ActionController::TestCase
   #    def test_should_get_index
   #      ...
@@ -137,7 +136,7 @@ module Authorization
   # way, these methods might not work for you.
   module TestHelper
     include Authorization::Maintenance
-    
+
     # Analogue to the Ruby's assert_raise method, only executing the block
     # in the context of the given user.
     def assert_raise_with_user(user, *args, &block)
@@ -180,8 +179,8 @@ module Authorization
       end
       assert !Authorization::Engine.instance.permit?(privilege, options)
     end
-    
-    def request_with(user, method, xhr, action, params = {}, 
+
+    def request_with(user, method, xhr, action, params = {},
         session = {}, flash = {})
       session = session.merge({:user => user, :user_id => user && user.id})
       with_user(user) do
@@ -192,7 +191,7 @@ module Authorization
         end
       end
     end
-  
+
     def self.included(base)
       [:get, :post, :put, :delete].each do |method|
         base.class_eval <<-EOV, __FILE__, __LINE__

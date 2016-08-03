@@ -226,13 +226,8 @@ module Authorization
     # Options
     # [:+context+]  See permit!
     # [:+user+]  See permit!
-<<<<<<< HEAD
     #
     def obligations(privilege, options = {})
-=======
-    #
-    def obligations (privilege, options = {})
->>>>>>> master
       options = {:context => nil}.merge(options)
       user, roles, privileges = user_roles_privleges_from_options(privilege, options)
 
